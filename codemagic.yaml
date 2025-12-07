@@ -2,7 +2,7 @@ workflows:
   ios-workflow:
     name: iOS (Flutter)
     max_build_duration: 120
-    instance_type: mac_mini
+  instance_type: mac_mini_m2
     environment:
       flutter: stable
       xcode: "14.2"
