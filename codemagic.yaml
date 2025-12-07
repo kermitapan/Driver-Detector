@@ -19,15 +19,7 @@ workflows:
       - name: Build iOS app
         script: |
           echo "Building iOS application"
-          # Adjust workspace/scheme as needed for your project
-          if [ -f "*.xcworkspace" ]; then
-            xcodebuild -workspace *.xcworkspace -scheme YourScheme -configuration Release archive -archivePath build/app.xcarchive CODE_SIGNING_ALLOWED=NO
-          elif [ -f "*.xcodeproj" ]; then
-            xcodebuild -project *.xcodeproj -scheme YourScheme -configuration Release archive -archivePath build/app.xcarchive CODE_SIGNING_ALLOWED=NO
-          else
-            echo "No Xcode project found"
-            exit 1
-          fi
+          xcodebuild -project DriverDetector.xcodeproj -scheme DriverDetector -configuration Release archive -archivePath build/app.xcarchive CODE_SIGNING_ALLOWED=NO
 
     artifacts:
       - build/*.xcarchive
