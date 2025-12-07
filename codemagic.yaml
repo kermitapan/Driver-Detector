@@ -32,8 +32,3 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
 
-    xcode:
-      # These are common defaults for Flutter projects. Adjust if your project uses a different workspace/scheme.
-      workspace: ios/Runner.xcworkspace
-      scheme: Runner
-      export_method: ad-hoc
