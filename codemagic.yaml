@@ -1,0 +1,39 @@
+workflows:
+  ios-workflow:
+    name: iOS (Flutter)
+    max_build_duration: 120
+    instance_type: mac_mini
+    environment:
+      flutter: stable
+      xcode: "14.2"
+    scripts:
+      - name: Flutter pub get
+        script: |
+          echo "Running flutter pub get"
+          flutter pub get
+
+      - name: CocoaPods install
+        script: |
+          echo "Installing CocoaPods dependencies (if ios/ exists)"
+          if [ -d ios ]; then
+            cd ios
+            pod install --repo-update || true
+            cd ..
+          else
+            echo "No ios directory found — skipping CocoaPods"
+          fi
+
+      - name: Build iOS IPA
+        script: |
+          echo "Building iOS artifact"
+          # Try Flutter's ipa build (preferred), fallback to ios build without codesign
+          flutter build ipa --export-method ad-hoc || flutter build ios --release --no-codesign
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+
+    xcode:
+      # These are common defaults for Flutter projects. Adjust if your project uses a different workspace/scheme.
+      workspace: ios/Runner.xcworkspace
+      scheme: Runner
+      export_method: ad-hoc
