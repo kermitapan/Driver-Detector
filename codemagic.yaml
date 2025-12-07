@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       flutter: stable
-      xcode: "14.2"
+      xcode: latest
     scripts:
       - name: Flutter pub get
         script: |
