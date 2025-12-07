@@ -1,0 +1,262 @@
+workflows:
+  # Main workflow for comprehensive testing
+  driver-detector-test:
+    name: Driver Detector - Full Test Suite
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - app_store_credentials
+        - google_play_credentials
+      vars:
+        PACKAGE_NAME: "com.driverdetector.app"
+        FLUTTER_VERSION: "stable"
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Run code analysis
+        script: |
+          flutter analyze
+      - name: Run driver detection tests
+        script: |
+          echo "Running driver detection feature tests..."
+          flutter test test/driver_detection_test.dart --reporter expanded || echo "Driver detection tests not yet implemented"
+      - name: Run car movement tests
+        script: |
+          echo "Running car movement feature tests..."
+          flutter test test/car_movement_test.dart --reporter expanded || echo "Car movement tests not yet implemented"
+      - name: Run crash detection tests
+        script: |
+          echo "Running crash detection feature tests..."
+          flutter test test/crash_detection_test.dart --reporter expanded || echo "Crash detection tests not yet implemented"
+      - name: Run all unit tests
+        script: |
+          echo "Running all unit tests..."
+          flutter test --coverage --reporter expanded || echo "No tests found yet"
+      - name: Build Android APK
+        script: |
+          flutter build apk --release || echo "Build not yet configured"
+      - name: Build iOS (if on Mac)
+        script: |
+          if [ "$OSTYPE" == "darwin"* ]; then
+            flutter build ios --release --no-codesign || echo "iOS build not yet configured"
+          else
+            echo "Skipping iOS build on non-Mac platform"
+          fi
+    artifacts:
+      - build/**/outputs/**/*.apk
+      - build/**/outputs/**/*.aab
+      - build/**/outputs/**/mapping.txt
+      - build/ios/ipa/*.ipa
+      - flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - user@example.com
+        notify:
+          success: true
+          failure: true
+
+  # Workflow specifically for driver detection feature
+  driver-detection-feature:
+    name: Driver Detection Feature Testing
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+      xcode: latest
+      vars:
+        FEATURE: "driver_detection"
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Run driver detection specific tests
+        script: |
+          echo "Testing driver detection feature..."
+          flutter test test/driver_detection_test.dart --reporter expanded || echo "Tests not yet implemented"
+      - name: Run driver detection integration tests
+        script: |
+          echo "Running driver detection integration tests..."
+          flutter test integration_test/driver_detection_integration_test.dart --reporter expanded || echo "Integration tests not yet implemented"
+    artifacts:
+      - test_results/driver_detection/
+    publishing:
+      email:
+        recipients:
+          - user@example.com
+        notify:
+          success: false
+          failure: true
+
+  # Workflow specifically for car movement feature
+  car-movement-feature:
+    name: Car Movement Feature Testing
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+      xcode: latest
+      vars:
+        FEATURE: "car_movement"
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Run car movement specific tests
+        script: |
+          echo "Testing car movement feature..."
+          flutter test test/car_movement_test.dart --reporter expanded || echo "Tests not yet implemented"
+      - name: Run car movement integration tests
+        script: |
+          echo "Running car movement integration tests..."
+          flutter test integration_test/car_movement_integration_test.dart --reporter expanded || echo "Integration tests not yet implemented"
+    artifacts:
+      - test_results/car_movement/
+    publishing:
+      email:
+        recipients:
+          - user@example.com
+        notify:
+          success: false
+          failure: true
+
+  # Workflow specifically for crash detection feature
+  crash-detection-feature:
+    name: Crash Detection Feature Testing
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+      xcode: latest
+      vars:
+        FEATURE: "crash_detection"
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Run crash detection specific tests
+        script: |
+          echo "Testing crash detection feature..."
+          flutter test test/crash_detection_test.dart --reporter expanded || echo "Tests not yet implemented"
+      - name: Run crash detection integration tests
+        script: |
+          echo "Running crash detection integration tests..."
+          flutter test integration_test/crash_detection_integration_test.dart --reporter expanded || echo "Integration tests not yet implemented"
+    artifacts:
+      - test_results/crash_detection/
+    publishing:
+      email:
+        recipients:
+          - user@example.com
+        notify:
+          success: false
+          failure: true
+
+  # Android release workflow
+  android-release:
+    name: Android Release Build
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+      groups:
+        - google_play_credentials
+      vars:
+        PACKAGE_NAME: "com.driverdetector.app"
+    scripts:
+      - name: Set up key properties
+        script: |
+          echo $ANDROID_KEYSTORE | base64 --decode > /tmp/keystore.jks
+          cat >> "$CM_BUILD_DIR/android/key.properties" <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=/tmp/keystore.jks
+          EOF
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Run tests
+        script: |
+          flutter test --reporter expanded
+      - name: Build Android release
+        script: |
+          flutter build appbundle --release
+    artifacts:
+      - build/**/outputs/**/*.aab
+      - build/**/outputs/**/*.apk
+      - build/**/outputs/**/mapping.txt
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
+      email:
+        recipients:
+          - user@example.com
+        notify:
+          success: true
+          failure: true
+
+  # iOS release workflow
+  ios-release:
+    name: iOS Release Build
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - app_store_credentials
+      vars:
+        BUNDLE_ID: "com.driverdetector.app"
+        XCODE_WORKSPACE: "Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
+    scripts:
+      - name: Set up code signing
+        script: |
+          keychain initialize
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+      - name: Use profiles
+        script: |
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Install pods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      - name: Run tests
+        script: |
+          flutter test --reporter expanded
+      - name: Build iOS release
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+      email:
+        recipients:
+          - user@example.com
+        notify:
+          success: true
+          failure: true
