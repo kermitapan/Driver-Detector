@@ -1,12 +1,32 @@
 workflows:
   ios-workflow:
-    name: iOS Native
+    name: iOS Native - Real Device
     max_build_duration: 120
     instance_type: mac_mini_m2
     environment:
       xcode: latest
       cocoapods: default
+      vars:
+        BUNDLE_ID: "com.example.DriverDetector"
+        XCODE_SCHEME: "DriverDetector"
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.example.DriverDetector
     scripts:
+      - name: Set up keychain
+        script: |
+          keychain initialize
+      
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_DEVELOPMENT \
+            --create
+      
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      
       - name: Install CocoaPods dependencies
         script: |
           if [ -f "Podfile" ]; then
@@ -18,9 +38,20 @@ workflows:
 
       - name: Build iOS app
         script: |
-          echo "Building iOS application"
-          xcodebuild -project DriverDetector.xcodeproj -scheme DriverDetector -configuration Release archive -archivePath build/app.xcarchive CODE_SIGNING_ALLOWED=NO
+          echo "Building iOS application for real device"
+          xcode-project build-ipa \
+            --project "DriverDetector.xcodeproj" \
+            --scheme "$XCODE_SCHEME"
 
     artifacts:
-      - build/*.xcarchive
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
 
